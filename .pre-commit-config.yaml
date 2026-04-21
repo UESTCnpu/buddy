@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v22.1.3  # Use the version of clang-format you have installed
+    hooks:
+      - id: clang-format
+        name: clang-format C++ code
+        files: \.(cpp|hpp|cc|cxx|h|c|hxx)$
+        args: []  # You can set your preferred style here
+
+  # - repo: https://github.com/pocc/pre-commit-hooks
+  #   rev: v1.3.5  # Use the latest stable version
+  #   hooks:
+  #     - id: clang-tidy
+  #       name: clang-tidy C++ code
+  #       files: \.(cpp|hpp|cc|cxx|h|c|hxx)$
+  #       args:
+  #         - --quiet
+  #         - --checks=*,-clang-diagnostic-*,-clang-analyzer-*
+  #         - --extra-arg=-x
+  #         - --extra-arg=c++
+  #         - --extra-arg=-std=c++17
+  #         - --warnings-as-errors=*
+  #         - --extra-arg=-I.
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.10
+    hooks:
+    # Run the linter.
+    - id: ruff-check
+      args: [ --fix ]
+    # Run the formatter.
+    - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0  # Updated to the latest version
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']  # Allow maximum 1MB files

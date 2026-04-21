@@ -1,0 +1,83 @@
+name: test build process
+
+on:
+  push:
+    branches: [ main, ci, ci-test ]
+  pull_request:
+    branches: [ main, ci, ci-test ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Build (${{ matrix.os }}-${{ matrix.arch }})
+    timeout-minutes: 360
+    continue-on-error: ${{ matrix.experimental }}
+
+    concurrency:
+      group: buddy-mlir-${{ matrix.os }}-${{ matrix.arch }}
+      cancel-in-progress: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: linux
+            experimental: false
+            venv_activate: "source ~/miniforge3/bin/activate buddy"
+            venv_deactivate: "conda deactivate"
+          - arch: arm64
+            os: macos
+            experimental: true
+            venv_activate: "source ~/miniforge3/bin/activate buddy"
+            venv_deactivate: "conda deactivate"
+          - arch: riscv64
+            os: linux
+            experimental: true
+            venv_activate: "source /home/jenkins/venv/bin/activate"
+            venv_deactivate: "deactivate"
+
+    runs-on:
+      - self-hosted
+      - ${{ matrix.arch }}
+
+    steps:
+      - name: Print target
+        run: |
+          echo "Building on ${{ matrix.arch }}"
+          echo "------ uname ------"
+          uname -a
+
+      - name: Checkout
+        if: matrix.arch != 'riscv64'
+        uses: actions/checkout@v6
+        with:
+          submodules: 'false'
+      - name: Checkout from local Gitea (riscv64)
+        if: matrix.arch == 'riscv64'
+        run: |
+          git clone --no-checkout https://community-ci.openruyi.cn/RuyiAI-Stack/buddy-mlir .
+          git remote add github https://github.com/buddy-compiler/buddy-mlir.git
+          git fetch github ${{ github.sha }}
+          git checkout ${{ github.sha }}
+
+      - name: Build buddy-mlir
+        uses: ./.github/actions/ci-common
+        with:
+          arch: ${{ matrix.arch }}
+          venv_activate: ${{ matrix.venv_activate }}
+          venv_deactivate: ${{ matrix.venv_deactivate }}
+
+      - name: Run check-buddy
+        if: matrix.arch == 'x64'
+        run: |
+          ${{ matrix.venv_activate }}
+          ninja -C build check-buddy
+          ${{ matrix.venv_deactivate }}
+
+      - name: Run check-buddy
+        if: matrix.arch != 'x64'
+        run: |
+          ${{ matrix.venv_activate }}
+          ninja -C build check-buddy | true
+          ${{ matrix.venv_deactivate }}
